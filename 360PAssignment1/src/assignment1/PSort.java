@@ -5,71 +5,83 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class PSort implements Runnable {
+	public static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
+    static final ExecutorService executor = Executors.newFixedThreadPool(5000);
+	
 	private int[] array;
 	private int start;
 	private int end;
+	private final int minPartion;
 	
-	public PSort(int[] array, int start, int end){
+	public PSort(int minPartion, int[] array, int start, int end){
 		this.array= array;
 		this.start= start;
 		this.end = end;
+		this.minPartion = minPartion;
 	} 
 	
 	@Override
     public void run() {
-		int pivot = array[start + ((end-start)/2)];
-		PSort psort1 = new PSort(array, start, pivot);
-		PSort psort2 = new PSort(array, pivot+1, end);
-
-		ExecutorService pool = Executors.newCachedThreadPool();
-		Future<?> runnableFuture1 = pool.submit(psort1);
-		Future<?> runnableFuture2 = pool.submit(psort2);
-		quickSort(array, start, end);
+		quickSort(array, start, end);	
     }
 	
 	public static void parallelSort(int[] A, int begin, int end){
-		if (A == null || end == 0){
-			return;
-		}
 		
 		//create cached thread pool
-		ExecutorService cachedPool = Executors.newCachedThreadPool();
-		PSort psort = new PSort(A, begin, end-1);
-		Future<?> runnableFuture = cachedPool.submit(psort);
+		//ExecutorService cachedPool = Executors.newCachedThreadPool();
+		PSort psort = new PSort(A.length/PSort.MAX_THREADS, A, begin, end-1);
+		psort.run();
+		//Future<?> runnableFuture = cachedPool.submit(psort);
 		//psort.quickSort(A, begin, end-1);
-		cachedPool.shutdown(); // shutdown the pool
+		//cachedPool.shutdown(); // shutdown the pool
 	}
 		
+	public void swap(int[] Array, int x, int y){
+		int temp = Array[x];
+		Array[x] = Array[y];
+		Array[y] = temp;
+	}
 	
-	public void quickSort(int[] Array, int lower, int higher){
-		int low = lower;
-		int high = higher;
-		int pivot = Array[low + ((high-low)/2)];
+	
+	public void quickSort(int[] Array, int start, int end){
+		int length = end - start +1;
 		
-		while(low <= high){
-			while (Array[low] < pivot){
-				low ++;
-			}
-			while (Array[high] > pivot){
-				high --;
-			}
-			if(low <= high){				//swap
-				int temp = Array[low];
-				Array[low] = Array[high];
-				Array[high] = temp;
-				low ++;
-				high--;
-			}
+		if(length <= 1){return;}
+		
+		//int pivot_index = medianOfThree(array, start, end);
+		int pivot_index = start+(end-start)/2;
+		int pivotValue= Array[pivot_index];
+		
+		swap(array, pivot_index, end);
+
+        int storeIndex = start;
+        for (int i = start; i < end; i++) {
+            if (array[i] <= pivotValue) {
+                swap(array, i, storeIndex);
+                storeIndex++;
+            }
+        }
+
+        swap(array, storeIndex, end);
+
+        if (length > minPartion) {
+
+        	PSort quick = new PSort(minPartion, array, start, storeIndex - 1);
+            Future<?> future = executor.submit(quick);
+           // PSort quick2 = new PSort(minPartion, array, storeIndex + 1, end);
+            quickSort(array, storeIndex + 1, end);
+            //future = executor.submit(quick2);
+            try {
+                future.get();
+                System.out.println("thread ");
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        } else {
+            quickSort(array, start, storeIndex - 1);
+            quickSort(array, storeIndex + 1, end);
+        }
 			
-			if(lower < high){
-				//runnableFuture.add(cachedPool.submit(new PSort(Array, lower, high)));
-				quickSort(Array, lower, high);
-			}
-			if(low < higher){
-				quickSort(Array, low, higher);
-			}
-			
-		}
-	}
+	} 
 	
 }
