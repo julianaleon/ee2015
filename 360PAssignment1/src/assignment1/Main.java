@@ -5,8 +5,8 @@ public class Main {
 	     // Test Q1 implementation
 	     // you do not need to write this code. 
 	     // create and populate array A with values
-	     int A[] = {42,2,9,25,49}; 
-		//int A[] = {10,11,42,2,9,25,49,88,100,33,66,4,22};
+	    // int A[] = {42,2,9,25,49}; 
+		int A[] = {1,5,7,2,8,3,4,9,6,20,15,100,18,12};
 	     // call PSort 
 	     PSort.parallelSort(A, 0, A.length);
 	     
@@ -18,7 +18,7 @@ public class Main {
 	     // (you do not need to write this code). 
 
 	     // Test Q2 implementation with 3 threads
-	     int lookup = 22;
+	     int lookup = 8;
 	     int result = PSearch.parallelSearch(lookup, A, 14);
 	     System.out.println("\n" +"index is of " +lookup+ " is: " + result);
 	     // should return -1 as 20 is not in array

@@ -35,7 +35,7 @@ public class PSearch implements Callable<Integer>{
 	public static int parallelSearch(int x, int[] A, int numThreads){
 		//Get ExecutorService from Executors utility class, thread pool size is numThreads
 		ExecutorService executor = Executors.newFixedThreadPool(numThreads);
-		 //create list to hold the Future object associated with Callable
+		//create list to hold the Future object associated with Callable
 		List<Future<Integer>> list = new ArrayList<Future<Integer>>();
 		
 		int div = A.length/numThreads;
@@ -50,7 +50,6 @@ public class PSearch implements Callable<Integer>{
 			if(i==numThreads-1){
 				end= end+A.length%numThreads ;
 			}
-			//WorkerThread t= new WorkerThread(A, x, start, end);
 			Callable<Integer> t = new PSearch(A, x, start, end);
 			Future<Integer> future = executor.submit(t);
 			list.add(future);
