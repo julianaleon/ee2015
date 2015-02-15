@@ -1,2 +1,2 @@
 # ee2015
-concurrent and distributed systems assignemnts
+concurrent and distributed systems assignments
