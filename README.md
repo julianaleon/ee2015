@@ -1,2 +1,2 @@
 # ee2015
-360p class work
+concurrent and distributed systems assignments
