@@ -21,11 +21,9 @@ public class FairReadWriteLock {
 	}
 	
 	public synchronized void endRead(){
-		readers --;
-		if(readers == 0){
-			
-			notifyAll();
-		}
+		readers --;	
+		notifyAll();
+		
 		logger.logEndRead(); 
 	}
 	
