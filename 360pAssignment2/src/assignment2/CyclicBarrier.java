@@ -13,7 +13,8 @@ public class CyclicBarrier {
 		// Creates a new CyclicBarrier that will trip when
 		// the given number of parties (threads) are waiting upon it
 		this.parties = parties;
-		isNotFull = new Semaphore(0, false);  
+		//TODO: check if isNotFUll should be false or true
+		isNotFull = new Semaphore(0, true);  //initially no permits available
 		lock = new Semaphore(1, true);
 		threads_waiting = 0;
 		arrival_index = 0;
