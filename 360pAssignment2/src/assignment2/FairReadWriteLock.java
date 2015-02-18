@@ -4,7 +4,7 @@ import java.util.concurrent.locks.*;
 
 public class FairReadWriteLock {
 	ReadWriteLockLogger logger;
-	final ReentrantLock monitorLock = new ReentrantLock();
+	//final ReentrantLock monitorLock = new ReentrantLock();
 	private int readers = 0;
 	private int writers = 0;
 	private int write_request = 0;
@@ -12,9 +12,12 @@ public class FairReadWriteLock {
 	
 	public synchronized void beginRead() throws InterruptedException{
 		logger.logTryToRead(); 
-		while(writers > 0 || write_request > 0){
-			wait();
+		try{
+			while(writers > 0 || write_request > 0){
+				wait();
+			}
 		}
+		catch (InterruptedException e){}
 		
 		readers ++;
 		logger.logBeginRead(); 

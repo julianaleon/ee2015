@@ -2,7 +2,7 @@ package assignment2;
 
 import java.util.concurrent.locks.*;
 
-public class Garden {
+public class Garden implements GardenCounts{
 	// Implement the following function
 	// You don’t need to worry about exceptions
 	// The constructor takes the MAX argument
@@ -58,5 +58,21 @@ public class Garden {
 		mary ++;
 		can_dig.signal();						   
 		shovel.unlock();					//release shovel
+	}
+	
+	@Override
+	public int totalHolesDugByNewton() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+	@Override
+	public int totalHolesSeededByBenjamin() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+	@Override
+	public int totalHolesFilledByMary() {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 }
