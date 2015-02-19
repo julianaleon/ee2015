@@ -4,7 +4,6 @@ import java.util.concurrent.locks.*;
 
 public class FairReadWriteLock {
 	ReadWriteLockLogger logger;
-	//final ReentrantLock monitorLock = new ReentrantLock();
 	private int readers = 0;
 	private int writers = 0;
 	private int write_request = 0;

@@ -6,73 +6,116 @@ public class Garden implements GardenCounts{
 	// Implement the following function
 	// You don’t need to worry about exceptions
 	// The constructor takes the MAX argument
-	final ReentrantLock shovel = new ReentrantLock();
-	//final Condition shovel_taken = lock.newCondition();
-	final Condition can_dig = shovel.newCondition();
-	final Condition can_plant = shovel.newCondition();
-	final Condition can_fill = shovel.newCondition();
+	final ReentrantLock lock = new ReentrantLock();
+	final Condition can_dig = lock.newCondition();
+	final Condition can_plant = lock.newCondition();
+	final Condition can_fill = lock.newCondition();
 	
 	private int newt = 0;
 	private int ben = 0;
 	private int mary = 0;
+	private boolean shovel = true;
 	private int max;
 	
 	public Garden(int MAX){
 		this.max = MAX;
 	}
-	public void startDigging() throws InterruptedException{
-		
-			if(newt-mary == max){
-				can_dig.await();
+	public void startDigging(){
+		lock.lock();
+		try{
+			while(newt-mary == max || !shovel){
+				try {
+					can_dig.await();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
-			else{
-				shovel.lock();
-			}	
+			shovel = false;
+		} finally {
+				lock.unlock();
+		}	
+		
 	}
 	
 	public void doneDigging(){	
-		newt++;
-		can_plant.signal();
-		shovel.unlock();					//release shovel
+		lock.lock();
+		try{
+			newt++;
+			shovel = true;				//release shovel
+			can_plant.signalAll();
+		}
+		finally{
+			lock.unlock();
+		}
 	}
 	
-	public void startSeeding() throws InterruptedException{
-		while(newt <= ben){
-			can_plant.await();
+	public void startSeeding(){
+		lock.lock();
+		try{
+			while(newt <= ben){
+				try {
+					can_plant.await();
+				}catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		finally{
+			lock.unlock();
 		}
 	}
 	
 	public void doneSeeding(){
-		ben ++;
-		can_fill.signal();
+		lock.lock();
+		try{
+			ben ++;
+			can_fill.signalAll();
+		}
+		finally{
+			lock.unlock();
+		}
 	}
 	
-	public void startFilling() throws InterruptedException{
-		while(ben <= mary){
-			can_fill.await();
+	public void startFilling(){
+		lock.lock();
+		try{
+			while(ben <= mary || !shovel){
+				try {
+					can_fill.await();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			shovel = false;
 		}
-		shovel.lock();
+		finally{
+			lock.unlock();
+		}
 	}	
 	
 	public void doneFilling(){
-		mary ++;
-		can_dig.signal();						   
-		shovel.unlock();					//release shovel
+		lock.lock();
+		try{
+			mary ++;
+			shovel = true;						//release shovel
+			can_dig.signal();						   
+		}
+		finally{
+			lock.unlock();
+		}
 	}
+	
 	
 	@Override
 	public int totalHolesDugByNewton() {
-		// TODO Auto-generated method stub
-		return 0;
+		return newt;
 	}
 	@Override
 	public int totalHolesSeededByBenjamin() {
-		// TODO Auto-generated method stub
-		return 0;
+		return ben;
 	}
 	@Override
 	public int totalHolesFilledByMary() {
-		// TODO Auto-generated method stub
-		return 0;
+		return mary;
 	}
 }
