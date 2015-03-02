@@ -1,6 +1,6 @@
 package assignment3;
 
-public class LinkedList {
+public monitor class LinkedList {
 	private Node head;
 	int max;
 	int list_size = 0;
@@ -19,9 +19,10 @@ public class LinkedList {
 			return -1;						// returns -1 if present
 		}
 		
-		while(list_size >= max){			//check if list is full		
+		waituntil(list_size < max);
+		/*while(list_size >= max){			//check if list is full		
 			//no_op							//block if full
-		}
+		}*/
 		
 		Node newNode = new Node(name, pr);
 		Node prev = null;
@@ -46,12 +47,14 @@ public class LinkedList {
 	}
 	
 	public String remove(){
-		while (list_size == 0){
-			// no_op
-		}
 		
-		//Node prev = null;
-		/*Node current = head;
+		waituntil(list_size > 0);
+		/*while (list_size == 0){
+			// no_op
+		}*/
+		
+		/*Node prev = null;
+		Node current = head;
 		Node temp = current;
 		current = current.next;
 		head = current;*/
