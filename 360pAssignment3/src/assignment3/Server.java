@@ -1,7 +1,6 @@
 package assignment3;
-import java.io.DataOutputStream;
+
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.*;
 import java.util.ArrayList;
@@ -35,32 +34,40 @@ public class Server {
 		
 		try {
 			tSocket = new ServerSocket(tPort);
+			System.out.println("Listening for TCP on : " + tPort);
 			uSocket = new DatagramSocket(uPort);
-		} catch (IOException e) {
+			System.out.println("Listening for UDP on : " + uPort);
+		}catch (SocketException e) {
 			e.printStackTrace();
-		}
+		}catch (IOException e) {
+			e.printStackTrace();
+		} 
 	}
 	
 	public class udpListener implements Runnable{
-		int size = 1000;
-		//int port;
-		
+		int size = 1024;
+		Server myServer; 
+		int port;
 		public udpListener(){}
+		
+		synchronized void sendUDP(){}
 		
 		@Override
 		public void run(){
 			try{
-				byte[] buf  = new byte[size];
-				DatagramPacket data = new DatagramPacket(buf, buf.length);
-				uSocket.receive(data);
-				
-				String r = new String (data.getData());				//returns <clientid> <bookid> <request>
-				String[] request = r.split(" ");
-				String output = Server.this.checkBook(request[0], request[1], request[2]);
-				byte[] output_buf = output.getBytes();	
-				
-				DatagramPacket packet = new DatagramPacket (output_buf, output_buf.length, data.getAddress(), data.getPort());
-				uSocket.send(packet);	
+				while(true){
+					byte[] buf  = new byte[size];
+					DatagramPacket data = new DatagramPacket(buf, buf.length);
+					uSocket.receive(data);
+					
+					String r = new String (data.getData());				//returns <clientid> <bookid> <request>
+					String[] request = r.split(" ");
+					String output = Server.this.checkBook(request[0], request[1], request[2]);
+					byte[] output_buf = output.getBytes();	
+					
+					DatagramPacket packet = new DatagramPacket (output_buf, output_buf.length, data.getAddress(), data.getPort());
+					uSocket.send(packet);	
+				}
 			}
 			catch(Exception e){
 				
@@ -86,9 +93,9 @@ public class Server {
 	
 	public class tcpHandler implements Runnable{
 		Socket socket;
-		public tcpHandler(Socket s){
-			this.socket = s;
-		};
+		public tcpHandler(Socket socket){
+			this.socket = socket;
+		}
 		
 		@Override
 		public void run() {
@@ -101,6 +108,9 @@ public class Server {
 				String output = Server.this.checkBook(request[0], request[1], request[2]);
 				out.println(output);
 				out.flush();
+				out.close();
+			    socket.close();
+			    in.close(); 		//added, shouldnt we close scanner?
 			}
 			catch(IOException e){
 				
@@ -108,10 +118,7 @@ public class Server {
 		}
 	}
 	
-
-	
-	//TODO: does this need to be synchronized?
-	public String checkBook(String client_id , String book_num, String request){
+	public synchronized String checkBook(String client_id , String book_num, String request){
 		int bookNumber = Integer.parseInt(book_num.substring(1));
 		String returnMessage;
 		String status = book_list.get(bookNumber);
@@ -147,7 +154,7 @@ public class Server {
 		while (true);
 	}
 	
-	public static void main(String argv[]) throws Exception{
+	public static void main(String argv[]){
 	     
 		Server server = new Server();  
 	    Scanner in = new Scanner(System.in);

@@ -11,6 +11,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 	
 
@@ -71,9 +72,10 @@ public class Client {
 		try {
 			socket = new DatagramSocket();
 			byte[] buf = command.getBytes();
+			byte[] received_buf =new byte[1000];
 			sendPacket = new DatagramPacket(buf, buf.length, ipAddress, port);
 			socket.send(sendPacket);
-			receivePacket = new DatagramPacket(buf, buf.length);
+			receivePacket = new DatagramPacket(received_buf, received_buf.length);
 			socket.receive(receivePacket);
 			
 			String received = new String(receivePacket.getData(), 0, receivePacket.getLength());
@@ -87,32 +89,39 @@ public class Client {
 	}
 	
 	public void connectTCP(String book_id, String request, int port){
-		Socket socket;
+		Socket socket = null;
 		String command = id + " " + book_id + " " + request;
-		try {
-			socket = new Socket(this.ipAddress, port);
-			Scanner in = new Scanner(socket.getInputStream());
-			PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-			out.println(command);
-			System.out.println(in.nextLine());
-			
-			socket.close();			//close socket 
-			in.close();				//close scanner
-		} catch (IOException e) {
-			e.printStackTrace();
+		while(true){
+			try {
+				socket = new Socket(this.ipAddress, port);
+				Scanner in = new Scanner(socket.getInputStream());
+				PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+				out.println(command);
+				System.out.println(in.nextLine());
+				
+				socket.close();			//close socket 
+				in.close();				//close scanner
+				break;
+			} catch (IOException e) {
+				//e.printStackTrace();
+			}
 		}
-		
 	}
 	
 	public static void main(String argv[]) throws Exception{
 		
 		Client client = new Client();
 		Scanner in = new Scanner(System.in);
-		String input = in.nextLine();
-		client.processFirstCommand(input);
+		//String input = in.nextLine();
+		client.processFirstCommand(in.nextLine());
 		
-		while(in.hasNextLine()){
+		while(true){
+		//while(in.hasNextLine()){
+			try{
 				client.processCommands(in.nextLine());
+			}catch(NoSuchElementException e){
+				break;
+			}
 		}
 		
 	}
