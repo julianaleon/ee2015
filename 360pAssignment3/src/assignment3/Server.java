@@ -23,11 +23,10 @@ public class Server {
 		String[] setup = input.split("\\s+");
 	      
 	    int total_books = Integer.parseInt(setup[0]);
+
+		//System.out.println("total books : " + total_books);
 	      
-	   // book_list = new ArrayList<String>(total_books+1);
-	      
-	    for(int i=1; i <= total_books; i++){
-	    	//book_list.set(i,"Available");
+	    for(int i=0; i <= total_books; i++){
 	    	book_list.add("Available");
 	    }
 	    
@@ -36,9 +35,9 @@ public class Server {
 		
 		try {
 			tSocket = new ServerSocket(tPort);
-			System.out.println("Listening for TCP on : " + tPort);
+			//System.out.println("Listening for TCP on port: " + tPort);
 			uSocket = new DatagramSocket(uPort);
-			System.out.println("Listening for UDP on : " + uPort);
+			//System.out.println("Listening for UDP on port: " + uPort);
 		}catch (SocketException e) {
 			e.printStackTrace();
 		}catch (IOException e) {
@@ -127,7 +126,7 @@ public class Server {
 		
 		if (request.equals("reserve")){ 					//check if book is available
 			if (status.equals("Available")){
-				returnMessage = client_id + book_num;
+				returnMessage = client_id + " " + book_num;
 				book_list.set(bookNumber, client_id);		//checkout book to client
 			}
 			else{											//not available, request fails
@@ -162,7 +161,7 @@ public class Server {
 	    Scanner in = new Scanner(System.in);
 	    String input = in.nextLine();
 
-		System.out.println("command to process:" + input);
+		//System.out.println("Input to process:" + input);
 	    server.processCommand(input);
 	    server.listener();
 	}	
