@@ -1,9 +1,10 @@
 package assignment3;
 
 import java.io.BufferedReader;
-import java.io.DataOutputStream;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -25,7 +26,7 @@ public class Client {
 	}
 	
 	public void processFirstCommand(String input){
-		String[] setup = input.split(" ");
+		String[] setup = input.split("\\s+");
 		this.id = id + setup[0];
 		
 		try {
@@ -36,7 +37,7 @@ public class Client {
 	}
 	
 	public void processCommands(String input){
-		String[] setup = input.split(" ");
+		String[] setup = input.split("\\s+");
 		String book_id = setup[0];
 		String request = setup[1];
 		
@@ -48,17 +49,17 @@ public class Client {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			return;
 		}
-		
-		int port = Integer.parseInt(setup[2]);
-		String protocol = setup[3];
-		
-		if(protocol.equals("T")){
-			connectTCP(book_id, request, port);
-		}
-		else if(protocol.equals("U")){
-			connectUDP(book_id, request, port);
+		else{
+			int port = Integer.parseInt(setup[2]);
+			String protocol = setup[3];
+			
+			if(protocol.equals("T")){
+				connectTCP(book_id, request, port);
+			}
+			else{
+				connectUDP(book_id, request, port);
+			}
 		}
 	}
 	
@@ -68,13 +69,15 @@ public class Client {
 		DatagramPacket sendPacket;
 		DatagramPacket receivePacket;
 		String command = id + " " + book_id + " " + request;
+		byte[] received_buf = new byte[1024];
 		
 		try {
 			socket = new DatagramSocket();
 			byte[] buf = command.getBytes();
-			byte[] received_buf =new byte[1000];
+			
 			sendPacket = new DatagramPacket(buf, buf.length, ipAddress, port);
 			socket.send(sendPacket);
+			
 			receivePacket = new DatagramPacket(received_buf, received_buf.length);
 			socket.receive(receivePacket);
 			
@@ -91,21 +94,19 @@ public class Client {
 	public void connectTCP(String book_id, String request, int port){
 		Socket socket = null;
 		String command = id + " " + book_id + " " + request;
-		while(true){
 			try {
 				socket = new Socket(this.ipAddress, port);
 				Scanner in = new Scanner(socket.getInputStream());
-				PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-				out.println(command);
+				PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
+				pw.println(command);
 				System.out.println(in.nextLine());
 				
 				socket.close();			//close socket 
 				in.close();				//close scanner
-				break;
+				pw.close();
 			} catch (IOException e) {
-				//e.printStackTrace();
+				e.printStackTrace();
 			}
-		}
 	}
 	
 	public static void main(String argv[]) throws Exception{

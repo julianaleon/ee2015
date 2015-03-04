@@ -15,18 +15,20 @@ public class Server {
 	ArrayList<String> book_list;
 	
 	public Server(){
-		
+		book_list = new ArrayList<String>();
+		book_list.add("invalid");
 	}
 	
 	public void processCommand(String input){
-		String[] setup = input.split(" ");
+		String[] setup = input.split("\\s+");
 	      
 	    int total_books = Integer.parseInt(setup[0]);
 	      
-	    book_list = new ArrayList<String>(total_books+1);
+	   // book_list = new ArrayList<String>(total_books+1);
 	      
-	    for(int i =0; i <= total_books; i++){
-	    	book_list.set(i,"Available");
+	    for(int i=1; i <= total_books; i++){
+	    	//book_list.set(i,"Available");
+	    	book_list.add("Available");
 	    }
 	    
 	    int uPort = Integer.parseInt(setup[1]);
@@ -61,7 +63,7 @@ public class Server {
 					uSocket.receive(data);
 					
 					String r = new String (data.getData());				//returns <clientid> <bookid> <request>
-					String[] request = r.split(" ");
+					String[] request = r.split("\\s+");
 					String output = Server.this.checkBook(request[0], request[1], request[2]);
 					byte[] output_buf = output.getBytes();	
 					
@@ -93,6 +95,7 @@ public class Server {
 	
 	public class tcpHandler implements Runnable{
 		Socket socket;
+		
 		public tcpHandler(Socket socket){
 			this.socket = socket;
 		}
@@ -101,19 +104,18 @@ public class Server {
 		public void run() {
 			try{
 				Scanner in = new Scanner(socket.getInputStream());
-				PrintWriter out = new PrintWriter(socket.getOutputStream());
+				PrintWriter pw = new PrintWriter(socket.getOutputStream());
 				String r = in.nextLine();				//returns <clientid> <bookid> <request>
-				String[] request = r.split(" ");
+				String[] request = r.split("\\s+");
 				
 				String output = Server.this.checkBook(request[0], request[1], request[2]);
-				out.println(output);
-				out.flush();
-				out.close();
+				pw.println(output);
+				pw.flush();
+				pw.close();
 			    socket.close();
-			    in.close(); 		//added, shouldnt we close scanner?
 			}
 			catch(IOException e){
-				
+				e.printStackTrace();
 			}
 		}
 	}
@@ -129,16 +131,16 @@ public class Server {
 				book_list.set(bookNumber, client_id);		//checkout book to client
 			}
 			else{											//not available, request fails
-				returnMessage = "fail" + client_id + book_num;
+				returnMessage = "fail" + " " + client_id + " " + book_num;
 			}
 		}
 		else{									// return book
 			if(status.equals(client_id)){
-				returnMessage = "free" + client_id + book_num;
+				returnMessage = "free" + " " + client_id + " " + book_num;
 				book_list.set(bookNumber, "Available");			
 			}
 			else{
-				returnMessage = "fail" + client_id + book_num;
+				returnMessage = "fail" + " " + client_id + " " + book_num;
 			}
 		}
 		return returnMessage;
@@ -146,8 +148,8 @@ public class Server {
 	
 	
 	public void listener(){
-		udpListener udpListen = new udpListener();
 		threadpool = Executors.newCachedThreadPool();
+		udpListener udpListen = new udpListener();
 		threadpool.submit(udpListen);
 		tcpListener tcpListen = new tcpListener();
 		threadpool.submit(tcpListen);
@@ -159,6 +161,8 @@ public class Server {
 		Server server = new Server();  
 	    Scanner in = new Scanner(System.in);
 	    String input = in.nextLine();
+
+		System.out.println("command to process:" + input);
 	    server.processCommand(input);
 	    server.listener();
 	}	
