@@ -10,36 +10,52 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 	
 
 public class Client {
-	private InetAddress ipAddress;
 	private String id;
+	private ArrayList<InetSocketAddress> server_list;		//list of server objects in order by proximity
 	
 	public Client(){
-		this.id = "c";
-		this.ipAddress = null;
+		this.id = "";
+		//this.ipAddress = null;
 	}
 	
-	public void processFirstCommand(String input){
-		String[] setup = input.split("\\s+");
-		this.id = id + setup[0];
+	public class InetSocketAddress extends SocketAddress{
+		private InetAddress ipAddress;
+		private int port;
 		
+		public InetSocketAddress(InetAddress ip, int port){
+			this.ipAddress = ip;
+			this.port = port;
+		}
+	}
+	
+	public void processFirstCommand(String client){
+		this.id = client;
+	}
+	
+	public void storeServers(String address){
+		String[] values = address.split(":");
 		try {
-			this.ipAddress = InetAddress.getByName(setup[1]);
+			InetAddress ipAdd = InetAddress.getByName(values[0]);
+			int port = Integer.parseInt(values[1]);
+			server_list.add(new InetSocketAddress(ipAdd, port));
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
-		}	
+		}
 	}
 	
 	public void processCommands(String input){
-		String[] setup = input.split("\\s+");
-		String book_id = setup[0];
-		String request = setup[1];
+		String[] command = input.split("\\s+");
+		String book_id = command[0];
+		String request = command[1];
 		
 		if(book_id.equals("sleep")){
 			try {
@@ -51,51 +67,34 @@ public class Client {
 			}
 		}
 		else{
-			int port = Integer.parseInt(setup[2]);
-			String protocol = setup[3];
+			Socket socket = new Socket();
+			Boolean connected = false;
+			int index = 0;
 			
-			if(protocol.equals("T")){
-				connectTCP(book_id, request, port);
-			}
-			else{
-				connectUDP(book_id, request, port);
+			while(!connected){								 	//attempt to connect to closest server
+				InetSocketAddress s = server_list.get(index);
+
+				try {
+					//socket = new Socket(s.ipAddress, s.port);
+					socket.connect(s, 100); 					// tries to connects with a timeout of 100 milliseconds
+					if(socket.isConnected()){
+						connected = true;
+						sendTCP(book_id, request, socket);
+					}		
+				} catch (IOException e) {
+					//e.printStackTrace();				 
+				}
+				
+				index = (index + 1) % server_list.size();		//loop index to next server in list
 			}
 		}
 	}
 	
 	
-	public void connectUDP(String book_id, String request, int port){
-		DatagramSocket socket;
-		DatagramPacket sendPacket;
-		DatagramPacket receivePacket;
-		String command = id + " " + book_id + " " + request;
-		byte[] received_buf = new byte[1024];
-		
-		try {
-			socket = new DatagramSocket();
-			byte[] buf = command.getBytes();
-			
-			sendPacket = new DatagramPacket(buf, buf.length, ipAddress, port);
-			socket.send(sendPacket);
-			
-			receivePacket = new DatagramPacket(received_buf, received_buf.length);
-			socket.receive(receivePacket);
-			
-			String received = new String(receivePacket.getData(), 0, receivePacket.getLength());
-			System.out.println(received);
-			
-		} catch (SocketException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	public void connectTCP(String book_id, String request, int port){
-		Socket socket = null;
+	public void sendTCP(String book_id, String request, Socket socket){
 		String command = id + " " + book_id + " " + request;
 			try {
-				socket = new Socket(this.ipAddress, port);
+				//socket = new Socket(this.ipAddress, port);
 				Scanner in = new Scanner(socket.getInputStream());
 				PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
 				pw.println(command);
@@ -113,8 +112,16 @@ public class Client {
 		
 		Client client = new Client();
 		Scanner in = new Scanner(System.in);
-		//String input = in.nextLine();
-		client.processFirstCommand(in.nextLine());
+		String input = in.nextLine();
+		String[] input_split = input.split("\\s+");		// <client id><# of servers present>
+		
+		client.processFirstCommand(input_split[0]);
+		
+		int servers = Integer.parseInt(input_split[1]);
+		
+		for (int i=1; i <= servers; i++){
+			client.storeServers(in.nextLine());
+		}
 		
 		while(true){
 		//while(in.hasNextLine()){

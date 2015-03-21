@@ -10,34 +10,42 @@ import java.util.concurrent.Executors;
 
 public class Server {
 	private ServerSocket tSocket;
-	private DatagramSocket uSocket;
 	ExecutorService threadpool;
 	ArrayList<String> book_list;
+	private InetAddress ipAddress;
+	private int commandsCompleted = 0;
+	private int k = 0;
+	private int delta = 0;
 	
 	public Server(){
 		book_list = new ArrayList<String>();
 		book_list.add("invalid");
 	}
 	
-	public void processCommand(String input){
-		String[] setup = input.split("\\s+");
-	      
-	    int total_books = Integer.parseInt(setup[0]);
-
-		//System.out.println("total books : " + total_books);
-	      
-	    for(int i=0; i <= total_books; i++){
+	public void createLibrary(int total_books){
+		
+		for(int i=0; i <= total_books; i++){
 	    	book_list.add("Available");
 	    }
-	    
-	    int uPort = Integer.parseInt(setup[1]);
-		int tPort = Integer.parseInt(setup[2]);	
+		
+		//System.out.println("total books : " + total_books);
+	}
+	
+	public void createServer(String input){					   // input is <ipAddress>:<portNumber>
+		String[] input_split = input.split(":");
+	      
+	    try {
+			ipAddress = InetAddress.getByName(input_split[0]); 
+			//TODO: need to compare this to the local host and see if server running
+		} catch (UnknownHostException e1) {
+			e1.printStackTrace();
+		} 
+	    int port = Integer.parseInt(input_split[1]);	
 		
 		try {
-			tSocket = new ServerSocket(tPort);
+			tSocket = new ServerSocket(port);
 			//System.out.println("Listening for TCP on port: " + tPort);
-			uSocket = new DatagramSocket(uPort);
-			//System.out.println("Listening for UDP on port: " + uPort);
+			
 		}catch (SocketException e) {
 			e.printStackTrace();
 		}catch (IOException e) {
@@ -45,35 +53,29 @@ public class Server {
 		} 
 	}
 	
-	public class udpListener implements Runnable{
-		int size = 1024;
-		Server myServer; 
-		int port;
-		public udpListener(){}
-		
-		synchronized void sendUDP(){}
-		
-		@Override
-		public void run(){
-			try{
-				while(true){
-					byte[] buf  = new byte[size];
-					DatagramPacket data = new DatagramPacket(buf, buf.length);
-					uSocket.receive(data);
-					
-					String r = new String (data.getData());				//returns <clientid> <bookid> <request>
-					String[] request = r.split("\\s+");
-					String output = Server.this.checkBook(request[0], request[1], request[2]);
-					byte[] output_buf = output.getBytes();	
-					
-					DatagramPacket packet = new DatagramPacket (output_buf, output_buf.length, data.getAddress(), data.getPort());
-					uSocket.send(packet);	
+	public void setCrash(String input){
+		String[] command = input.split("\\s+");			// <crash> <k> <delta>
+		if(command[0].equals("crash")){
+			k = Integer.parseInt(command[1]);
+			delta = Integer.parseInt(command[2]);
+		}
+	}
+	
+	public void crashServer(){		
+			if(k >= commandsCompleted)	{			// causes crash
+				//TODO: lose data
+				try {
+					Thread.sleep(delta);			//sever unresponsive for delta milliseconds
+				} catch (NumberFormatException e) {
+					e.printStackTrace();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
 				}
+				commandsCompleted = 0; 			//reset counter
+				k = 0;
+				//TODO: regain data
+			
 			}
-			catch(Exception e){
-				
-			}
-		} 
 	}
 	
 	public class tcpListener implements Runnable{
@@ -112,6 +114,9 @@ public class Server {
 				pw.flush();
 				pw.close();
 			    socket.close();
+
+				commandsCompleted += 1; 	// increment commands completed by server
+				crashServer();			 	// Check if sever should crash
 			}
 			catch(IOException e){
 				e.printStackTrace();
@@ -148,8 +153,6 @@ public class Server {
 	
 	public void listener(){
 		threadpool = Executors.newCachedThreadPool();
-		udpListener udpListen = new udpListener();
-		threadpool.submit(udpListen);
 		tcpListener tcpListen = new tcpListener();
 		threadpool.submit(tcpListen);
 		while (true);
@@ -160,9 +163,24 @@ public class Server {
 		Server server = new Server();  
 	    Scanner in = new Scanner(System.in);
 	    String input = in.nextLine();
-
+	    
+		String[] commandPieces = input.split("\\s+");
+	    
+		int server_id = Integer.parseInt(commandPieces[1]);
+		int server_instances = Integer.parseInt(commandPieces[2]);
+	    int total_books = Integer.parseInt(commandPieces[3]);
+	    server.createLibrary(total_books);
+	    
+	    for (int i = 1; 1 <= server_instances; i++){
+	    	input = in.nextLine();
+	    	server.createServer(input);
+	    }
+	    
+	    while(in.hasNextLine()){
+	    	server.setCrash(in.nextLine());
+	    	server.crashServer();
+	    }
 		//System.out.println("Input to process:" + input);
-	    server.processCommand(input);
 	    server.listener();
 	}	
 		
