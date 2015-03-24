@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -12,14 +13,19 @@ public class Server {
 	private ServerSocket tSocket;
 	ExecutorService threadpool;
 	ArrayList<String> book_list;
-	private InetAddress ipAddress;
-	private int commandsCompleted = 0;
+	List<ServerInfo> server_list;
+	List<Crashes> crash_list;
+	private int commandsCompleted;
 	private int k = 0;
 	private int delta = 0;
+	private int id;
 	
 	public Server(){
 		book_list = new ArrayList<String>();
+		server_list = new ArrayList<ServerInfo>();
+		crash_list = new ArrayList<Crashes>();
 		book_list.add("invalid");
+		commandsCompleted = 0;
 	}
 	
 	public void createLibrary(int total_books){
@@ -31,34 +37,39 @@ public class Server {
 		//System.out.println("total books : " + total_books);
 	}
 	
-	public void createServer(String input){					   // input is <ipAddress>:<portNumber>
+	public void createServer(int index , String input){					   // input is <ipAddress>:<portNumber>
 		String[] input_split = input.split(":");
 	      
 	    try {
-			ipAddress = InetAddress.getByName(input_split[0]); 
-			//TODO: need to compare this to the local host and see if server running
-		} catch (UnknownHostException e1) {
-			e1.printStackTrace();
-		} 
-	    int port = Integer.parseInt(input_split[1]);	
-		
-		try {
-			tSocket = new ServerSocket(port);
-			//System.out.println("Listening for TCP on port: " + tPort);
+	    	InetAddress ipAddress = InetAddress.getByName(input_split[0]);
+			int port = Integer.parseInt(input_split[1]);
 			
-		}catch (SocketException e) {
-			e.printStackTrace();
-		}catch (IOException e) {
+			server_list.add(new ServerInfo(index, port, ipAddress));
+				
+		} catch (IOException e) {
 			e.printStackTrace();
 		} 
+
 	}
 	
-	public void setCrash(String input){
+	public void start(){
+		 try {
+		    	InetAddress ipAddress = server_list.get(id).getIp();
+
+				if (ipAddress.isAnyLocalAddress() || ipAddress.isLoopbackAddress()){  			// checks if server is on local host
+					tSocket = new ServerSocket(server_list.get(id).getPort());
+				}		
+			} catch (IOException e) {
+				e.printStackTrace();
+			} 
+
+	}
+	
+	public void setCrashes(String input){
 		String[] command = input.split("\\s+");			// <crash> <k> <delta>
-		if(command[0].equals("crash")){
-			k = Integer.parseInt(command[1]);
-			delta = Integer.parseInt(command[2]);
-		}
+		k = Integer.parseInt(command[1]);
+		delta = Integer.parseInt(command[2]);
+		crash_list.add(new Crashes(delta, k));
 	}
 	
 	public void crashServer(){		
@@ -150,7 +161,7 @@ public class Server {
 		return returnMessage;
 	}
 	
-	
+	//TODO: update this 
 	public void listener(){
 		threadpool = Executors.newCachedThreadPool();
 		tcpListener tcpListen = new tcpListener();
@@ -166,21 +177,23 @@ public class Server {
 	    
 		String[] commandPieces = input.split("\\s+");
 	    
-		int server_id = Integer.parseInt(commandPieces[1]);
+		server.id = Integer.parseInt(commandPieces[1]);
 		int server_instances = Integer.parseInt(commandPieces[2]);
 	    int total_books = Integer.parseInt(commandPieces[3]);
+	    
 	    server.createLibrary(total_books);
 	    
-	    for (int i = 1; 1 <= server_instances; i++){
-	    	input = in.nextLine();
-	    	server.createServer(input);
+	    for (int i = 0; 1 < server_instances; i++){
+	    	server.createServer(i, in.nextLine());
 	    }
 	    
 	    while(in.hasNextLine()){
-	    	server.setCrash(in.nextLine());
+	    	server.setCrashes(in.nextLine());
+	    	//TODO: look at crashServer.. 
 	    	server.crashServer();
 	    }
-		//System.out.println("Input to process:" + input);
+	    
+	    server.start();
 	    server.listener();
 	}	
 		
